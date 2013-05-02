@@ -1,28 +1,28 @@
 /* 
- *  Copyright (C) 2013 AW2.0 Ltd
- *
- *  org.aw20 is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  Free Software Foundation,version 3.
- *  
- *  OpenBD is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *  
+ *  Copyright (C) 2013 Royall & Company
+*
+*  JSON DTD is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  Free Software Foundation,version 3.
+*  
+ *  JSON DTD is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*  
  *  You should have received a copy of the GNU General Public License
- *  along with org.aw20.  If not, see http://www.gnu.org/licenses/
- *  
+*  along with JSON DTD.  If not, see http://www.gnu.org/licenses/
+*  
  *  Additional permission under GNU GPL version 3 section 7
- *  
+*  
  *  If you modify this Program, or any covered work, by linking or combining 
  *  it with any of the JARS listed in the README.txt (or a modified version of 
  *  (that library), containing parts covered by the terms of that JAR, the 
  *  licensors of this Program grant you additional permission to convey the 
  *  resulting work. 
  *  
- *  $Id: JSONFormatter.java 3633 2013-02-27 15:24:00Z alan $
- */
+*/
+
 package com.royall.jsondtd;
 
 import java.text.DateFormat;
