@@ -1,37 +1,28 @@
 /* 
  *  Copyright (C) 2013 Royall & Company
-*
-*  JSON DTD is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  Free Software Foundation,version 3.
-*  
+ *
+ *  JSON DTD is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  Free Software Foundation,version 3.
+ *  
  *  JSON DTD is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*  
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
  *  You should have received a copy of the GNU General Public License
-*  along with JSON DTD.  If not, see http://www.gnu.org/licenses/
-*  
+ *  along with JSON DTD.  If not, see http://www.gnu.org/licenses/
+ *  
  *  Additional permission under GNU GPL version 3 section 7
-*  
+ *  
  *  If you modify this Program, or any covered work, by linking or combining 
  *  it with any of the JARS listed in the README.txt (or a modified version of 
  *  (that library), containing parts covered by the terms of that JAR, the 
  *  licensors of this Program grant you additional permission to convey the 
  *  resulting work. 
  *  
-*/
-package com.royall.jsondtd;
-
-/*
- * TODO
- * Strict mode for numbers
- * Min & Max for numbers (Need to compare multiple types? int, double, etc.)
- * More dynamic conditions
- * Custom types loadable
- * Check Strings for regex
  */
+package com.royall.jsondtd;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -49,7 +40,6 @@ import com.royall.jsondtd.util.DateUtil;
 public class JSONValidator {
 
 	private String failMessage = null;
-
 	private Object returnJson = null;
 
 	public final static String KEY_TYPE = "type";
@@ -62,21 +52,26 @@ public class JSONValidator {
 	public final static String KEY_ENUM = "enum";
 	public final static String KEY_STRING_ERR_ON_EMPTY = "err_on_empty";
 	public final static String KEY_STRING_REMOVE_EMPTY = "remove_empty";
+	public final static String KEY_REGEX = "regex";
 	public final static String KEY_FIELDS = "fields";
 	public final static String KEY_FIELDS_MIN = "min";
 	public final static String KEY_FIELDS_MAX = "max";
 	public final static String KEY_DATE_MUST_BE_AFTER = "after";
 	public final static String KEY_DATE_MUST_BE_BEFORE = "before";
+	public final static String KEY_NUM_MIN = "min";
+	public final static String KEY_NUM_MAX = "max";
 	public final static String KEY_ERR_ON = "err_on";
 	public final static String KEY_CHILDREN = "children";
 	public final static String KEY_ARRAY_MIN = "min";
 	public final static String KEY_ARRAY_MAX = "max";
 	public final static String KEY_WILDCARD_FIELD = "*";
 
-	// private final boolean useStrictMode;
 	private final boolean errorOnUnspecifiedKeys;
 	private final boolean removeUnspecifiedKeys;
 	private final boolean removeKeysWhenValueEmpty;
+	private final String datePattern;
+
+	private Map<String, Map<String, ?>> customTypes = new HashMap<String, Map<String, ?>>();
 
 	// Custom HashMap will return a current date if getting the key "now"
 	private Map<String, Object> defaultItems = new HashMap<String, Object>() {
@@ -99,8 +94,6 @@ public class JSONValidator {
 		}
 	};
 
-	private final String datePattern;
-
 	public JSONValidator() {
 		this(new HashMap<String, Object>());
 	}
@@ -109,25 +102,39 @@ public class JSONValidator {
 		if (_options == null)
 			throw new IllegalStateException("_options cannot be null");
 
-		// Object useStrictMode = _options.get(ValidationOptions.UseStrictMode);
 		Object errorOnUnspecifiedKeys = _options.get(ValidationOptions.ErrorOnUnspecifiedKeys);
 		Object removeUnspecifiedKeys = _options.get(ValidationOptions.RemoveUnspecifiedKeys);
 		Object removeKeysWhenValueEmpty = _options.get(ValidationOptions.RemoveKeysWhenValueEmpty);
 		Object datePattern = _options.get(ValidationOptions.DatePattern);
 
-		// this.useStrictMode = (useStrictMode instanceof Boolean) && ((Boolean)useStrictMode);
 		this.errorOnUnspecifiedKeys = (errorOnUnspecifiedKeys instanceof Boolean) && ((Boolean) errorOnUnspecifiedKeys);
 		this.removeUnspecifiedKeys = (removeUnspecifiedKeys instanceof Boolean) && ((Boolean) removeUnspecifiedKeys);
 		this.removeKeysWhenValueEmpty = (removeKeysWhenValueEmpty instanceof Boolean) && ((Boolean) removeKeysWhenValueEmpty);
 		this.datePattern = (datePattern != null) ? datePattern.toString() : null;
 	}
 
+	public void addDefaultItem(String _key, Object _item) {
+		defaultItems.put(_key, _item);
+	}
+
 	public void addDefaultItems(Map<String, ?> _defaultItems) {
 		defaultItems.putAll(_defaultItems);
 	}
 
-	public void addDefaultItem(String _key, Object _item) {
-		defaultItems.put(_key, _item);
+	public Map<String, Object> getDefaultItemsMap() {
+		return new HashMap<String, Object>(this.defaultItems);
+	}
+
+	public void addCustomType(String _typeName, Map<String, ?> _customTypePrototype) {
+		customTypes.put(_typeName, _customTypePrototype);
+	}
+
+	public void addCustomTypes(Map<String, Map<String, ?>> _customTypes) {
+		customTypes.putAll(_customTypes);
+	}
+
+	public Map<String, ?> getCustomTypes() {
+		return new HashMap<String, Object>(this.customTypes);
 	}
 
 	/**
@@ -241,9 +248,9 @@ public class JSONValidator {
 		String type = _prototype.get(KEY_TYPE).toString();
 		if (type.equalsIgnoreCase("string"))
 			return handleStringType(_json.getBlock(), _prototype, _testBuild);
-		else if (type.equalsIgnoreCase("number"))
+		else if (type.equalsIgnoreCase("number") || type.equalsIgnoreCase("numeric"))
 			return handleNumberType(_json.getBlock(), _prototype, _testBuild);
-		else if (type.equalsIgnoreCase("boolean"))
+		else if (type.equalsIgnoreCase("boolean") || type.equalsIgnoreCase("bool"))
 			return handleBooleanType(_json.getBlock(), _prototype, _testBuild);
 		else if (type.equalsIgnoreCase("simple"))
 			return handleSimpleType(_json.getBlock(), _prototype, _testBuild);
@@ -257,6 +264,8 @@ public class JSONValidator {
 			return handleNullType(_json.getBlock(), _prototype, _testBuild);
 		else if (type.equalsIgnoreCase("any"))
 			return handleAnyType(_json.getBlock(), _prototype, _testBuild);
+		else if (customTypes.get(type) instanceof Map)
+			return handleType(_json, (Map<?, ?>) customTypes.get(type), _testBuild);
 		else
 			throw new PrototypeException("Type '" + type + "' was not recognized"); // type not recognized
 	}
@@ -429,67 +438,10 @@ public class JSONValidator {
 				Object o1 = fieldMap.get(KEY_REQ);
 				if (o1 instanceof Boolean)
 					req = (Boolean) o1;
-				else if (o1 instanceof Map) {
-
-					Map<?, ?> reqMap = (Map<?, ?>) o1;
-					Set<?> reqKeys = reqMap.keySet();
-					Iterator<?> reqIT = reqKeys.iterator();
-					while (req == false && reqIT.hasNext()) {
-						Object reqKey = reqIT.next();
-						if (!(reqKey instanceof String))
-							throw new PrototypeException("Keys for required Struct must be a String in prototype");
-						String reqField = (String) reqKey;
-
-						// Object to set req = true if matched
-						Object reqObject = reqMap.get(reqKey);
-
-						// Get appropriate level for object to be found ^^^&fieldname would look three levels above current map
-						int upLevelCount = 0;
-
-						if (reqField.startsWith("^") && reqField.contains("\u0026")) {
-							int index = reqField.indexOf('&');
-							String temp = reqField.substring(0, index);
-							for (int i = 0; i < temp.length(); i++) {
-								if (temp.charAt(i) == '^')
-									upLevelCount++;
-							}
-							reqField = reqField.substring(index + 1);
-						}
-						JSONBlock levelToExamin = _json;
-						for (int i = 0; i < upLevelCount; i++) {
-							levelToExamin = levelToExamin.getParent();
-							if (levelToExamin == null)
-								throw new PrototypeException("Conditions for req went beyond root");
-						}
-
-						// Check if block exists
-						if (!(levelToExamin.getBlock() instanceof Map))
-							throw new PrototypeException("Conditions for req can only examine a Map");
-
-						Map<?, ?> blockToExamin = (Map<?, ?>) levelToExamin.getBlock();
-
-						// TODO need equals, not equals equalsignore case, etc...
-
-						if (reqObject == null) {
-							// Not expecting Object to be there...
-							req = !blockToExamin.containsKey(reqField);
-						} else {
-							Object valueToExamin = blockToExamin.get(reqField);
-							if (reqObject instanceof String && valueToExamin instanceof String) {
-								req = ((String) reqObject).equalsIgnoreCase((String) valueToExamin);
-							} else if (reqObject instanceof Integer && valueToExamin instanceof Integer) {
-								req = ((int) (Integer) reqObject) == ((int) (Integer) valueToExamin);
-							} else if (reqObject instanceof Double && valueToExamin instanceof Double) {
-								req = ((double) (Double) reqObject) == ((double) (Double) valueToExamin);
-							} else if (reqObject instanceof Boolean && valueToExamin instanceof Boolean) {
-								req = ((boolean) (Boolean) reqObject) == ((boolean) (Boolean) valueToExamin);
-							}
-						}
-
-					}
-
-				} else
-					throw new PrototypeException("req can only be boolean or struct for now");
+				else if (o1 instanceof Map)
+					req = new ConditionEvaluator().evaluate((Map<?, ?>) o1, _json);
+				else
+					throw new PrototypeException(KEY_REQ + " can only be boolean or struct.");
 			} else
 				req = false;
 
@@ -498,9 +450,11 @@ public class JSONValidator {
 			if (fieldMap.containsKey(KEY_ERR_ON)) {
 				Object o2 = fieldMap.get(KEY_ERR_ON);
 				if (o2 instanceof Boolean)
-					err_on = (Boolean) o2;
+					err_on = (Boolean) o2;				
+				else if (o2 instanceof Map)
+					err_on = new ConditionEvaluator().evaluate((Map<?, ?>) o2, _json);
 				else
-					throw new PrototypeException("req can only be boolean for now");
+					throw new PrototypeException(KEY_ERR_ON + " can only be boolean or struct.");
 			} else
 				err_on = false;
 
@@ -627,6 +581,15 @@ public class JSONValidator {
 			return false;
 		}
 
+		Object regexObject = _prototype.get(KEY_REGEX);
+		if (regexObject instanceof String) {
+			String regexString = (String) regexObject;
+			if (!((String) _json).matches(regexString)) {
+				failMessage = " Json String '" + _json + "' did not match regex pattern " + regexString;
+				return false;
+			}
+		}
+
 		_testBuild.putBlock(_json);
 
 		return true;
@@ -694,12 +657,26 @@ public class JSONValidator {
 			return false;
 		}
 
-		// Object o;
-		// if (_prototype.containsKey(KEY_NUM_MIN) && (o=_prototype.get(KEY_NUM_MIN)) instanceof Integer) {
-		// if( !(_json instanceof Integer) )
-		// throw
-		// }
-		// TODO Min/max stuff
+		if (_prototype.containsKey(KEY_NUM_MIN)) {
+			if (!(_prototype.get(KEY_NUM_MIN) instanceof Number)) {
+				throw new PrototypeException(KEY_NUM_MIN + " must be instance of Number.");
+			}
+			Number o = (Number) _prototype.get(KEY_NUM_MIN);
+			if (((Number) _json).doubleValue() < o.doubleValue()) {
+				failMessage = " Expected number to be greater than or equal to " + o.doubleValue() + " but was " + ((Number) _json).doubleValue();
+				return false;
+			}
+		}
+		if (_prototype.containsKey(KEY_NUM_MAX)) {
+			if (!(_prototype.get(KEY_NUM_MAX) instanceof Number)) {
+				throw new PrototypeException(KEY_NUM_MAX + " must be instance of Number.");
+			}
+			Number o = (Number) _prototype.get(KEY_NUM_MAX);
+			if (((Number) _json).doubleValue() > o.doubleValue()) {
+				failMessage = " Expected number to be less than or equal to " + o.doubleValue() + " but was " + ((Number) _json).doubleValue();
+				return false;
+			}
+		}
 
 		_testBuild.putBlock(_json);
 
