@@ -31,65 +31,6 @@ import java.util.Date;
 
 public class DateUtil extends Object {
 	
-	public static long SECS_MS   = 1000;
-  public static long MINS_MS   = 60 * SECS_MS;
-  public static long HOUR_MS   = 60 * MINS_MS;
-  public static long DAY_MS    = 24 * HOUR_MS;
-  public static long WEEK_MS   = 7 * DAY_MS;
-  public static long MONTH_MS  = 31 * DAY_MS;
-  public static long YEAR_MS   = 52 * WEEK_MS;
-
-	public static java.util.Date parseHttpDate( String _dateStr ){
-		if ( _dateStr == null ) return null;
-		
-		int c1 = _dateStr.lastIndexOf(" ");
-		
-		if ( c1 != -1 )
-			_dateStr = _dateStr.substring( 0, c1 ).trim();
-		
-		return parseDate( _dateStr,  "EEE, d MMM yyyy HH:mm:ss" );
-	}
-	
-	public static String getCookieDate( long l ){
-		return getDateString( l, "EEE, dd-MMM-yyyy HH:mm:ss" ) + " GMT";
-	}
-	
-	public static String getCookieDate( Date _date ){
-		return getDateString( _date, "EEE, dd-MMM-yyyy HH:mm:ss" ) + " GMT";
-	}
-	
-	public static String getHttpDate( long l ){
-		return getDateString( l, "EEE, d MMM yyyy HH:mm:ss" ) + " GMT";
-	}
-		
-	public static String getHttpDate( java.util.Date _date ){
-		return getDateString( _date, "EEE, d MMM yyyy HH:mm:ss" ) + " GMT";
-	}
-	
-	public static String getDateString( java.util.Date _date, String _pattern ){
-		return new SimpleDateFormat( _pattern ).format(_date);
-	}
-	
-	public static String getDateString( long _epoch, String _pattern ){
-		return new SimpleDateFormat( _pattern ).format(_epoch);
-	}
-
-	public static String getJSONDate( long l ){
-		return getDateString( l, "yyyy-MM-dd'T'HH:mm:ss" );
-	}
-	
-	public static String getJSONDate( java.util.Date _date ){
-		return getDateString( _date, "yyyy-MM-dd'T'HH:mm:ss" );
-	}
-
-	public static String getSQLDate( java.util.Date _date  ){
-		return getDateString( _date, "yyyy-MM-dd HH:mm:ss" );
-	}
-	
-	public static java.util.Date parseJSONDate( String _dateStr ){
-		return parseDate( _dateStr,  "yyyy-MM-dd'T'HH:mm:ss" );
-	}
-	
 	public static java.util.Date parseDate( String sDate, String _datePattern ){
 		sDate = (sDate != null) ? sDate.trim() : null;
 		
@@ -110,79 +51,8 @@ public class DateUtil extends Object {
 			}
 		}catch (Exception ex1) {
 			return null;
-		}
-    return d;
+		}	
+		return d;
 	}
-
-	
-  public static String formatAge( long age ){
-    if ( age < 0 ) age = age * -1;
-    
-    StringBuffer  ageString = new StringBuffer( 32 );
-
-    //-- Years
-    long years  = age / YEAR_MS;
-    if ( years > 0 ){
-      ageString.append( years + " year" );
-      if ( years > 1 ) ageString.append( "s" );
-      
-      ageString.append( " " );
-      age = age - ( years * YEAR_MS );
-    }
-    
-    //-- Months
-    long months = age / MONTH_MS;
-    if ( months > 0 ){
-      ageString.append( months + " month" );
-      if ( months > 1 ) ageString.append( "s" );
-      
-      ageString.append( " " );
-      age = age - ( months * MONTH_MS );
-    }
-    
-    //-- Days
-    long days = age / DAY_MS;
-    if ( days > 0 ){
-      ageString.append( days + " day" );
-      if ( days > 1 ) ageString.append( "s" );
-      
-      ageString.append( " " );
-      age = age - ( days * DAY_MS );
-    }
-    
-    //-- Hours
-    long hours  = age / HOUR_MS;
-    if ( hours > 0 ){
-      ageString.append( hours + " hour" );
-      if ( hours > 1 ) ageString.append( "s" );
-      
-      ageString.append( " " );
-      age = age - ( hours * HOUR_MS );
-    }
-    
-    //-- Minutes
-    long mins = age / MINS_MS;
-    if ( mins > 0 ){
-      ageString.append( mins + " min" );
-      if ( mins > 1 ) ageString.append( "s" );
-      
-      ageString.append( " " );
-      age = age - ( mins * MINS_MS );
-    }
-    
-    //-- Seconds
-    long seconds  = age / SECS_MS;
-    if ( seconds > 0 ){
-      ageString.append( seconds + " sec" );
-      if ( seconds > 1 ) ageString.append( "s" );
-      ageString.append( " " );
-    }
-    
-    return ageString.toString().trim();
-  }
-  
-  public static Date getFromJavaScriptDate( String jsDateStr ){
-  	return DateUtil.parseDate(jsDateStr, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-  }
   
 }

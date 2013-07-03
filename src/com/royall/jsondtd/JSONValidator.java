@@ -310,9 +310,9 @@ public class JSONValidator {
 		// Get children map
 		Object childrenObject = _prototype.get(KEY_CHILDREN);
 		if (childrenObject == null)
-			throw new PrototypeException("Fields required for Type Struct");
+			throw new PrototypeException("'" + KEY_CHILDREN + "' key required for Type List");
 		if (!(childrenObject instanceof Map))
-			throw new PrototypeException("Fields key of type: Struct must be a List");
+			throw new PrototypeException("'" + KEY_CHILDREN + "' key of type: list must be a Map");
 		Map<?, ?> childrenMap = (Map<?, ?>) childrenObject;
 
 		List<Object> testBuildList = new ArrayList<Object>();
@@ -450,7 +450,7 @@ public class JSONValidator {
 			if (fieldMap.containsKey(KEY_ERR_ON)) {
 				Object o2 = fieldMap.get(KEY_ERR_ON);
 				if (o2 instanceof Boolean)
-					err_on = (Boolean) o2;				
+					err_on = (Boolean) o2;
 				else if (o2 instanceof Map)
 					err_on = new ConditionEvaluator().evaluate((Map<?, ?>) o2, _json);
 				else
@@ -508,6 +508,18 @@ public class JSONValidator {
 				Object jsonField = jsonIT.next();
 				if (_prototype.containsKey(jsonField))
 					continue;
+
+				// Error on null unless we are removing unspecified keys
+				if (jsonField == null) {
+					if (removeUnspecifiedKeys) {
+						continue;
+					} else {
+						failMessage = " Null key in struct is not allowed.";
+						return false;
+					}
+				}
+
+				// Get the field value.
 				Object jsonValue = jsonMap.get(jsonField);
 
 				JSONBlock testBuild = new JSONBlock();
