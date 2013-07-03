@@ -227,12 +227,12 @@ public class JSONValidator {
 
 			// Now denormalize and save
 			Object denormalize = _prototype.get(KEY_DENORMALIZE);
-			if (denormalize != null) {
+			if (normalize != null && denormalize instanceof Boolean && (Boolean)denormalize) {
 				try {
 					Method m = c.getDeclaredMethod(KEY_DENORMALIZE, Object.class);
 					json = m.invoke(instance, _testBuild.getBlock());
 				} catch (Exception e) {
-					throw new PrototypeException("Failed to invoke " + denormalize.toString() + "." + KEY_DENORMALIZE + "(Object _jsonValue) due to " + e.getClass().getName() + ": " + e.getMessage(), e);
+					throw new PrototypeException("Failed to invoke " + normalize.toString() + "." + KEY_DENORMALIZE + "(Object _jsonValue) due to " + e.getClass().getName() + ": " + e.getMessage(), e);
 				}
 			} else {
 				json = _testBuild.getBlock();
@@ -511,12 +511,8 @@ public class JSONValidator {
 
 				// Error on null unless we are removing unspecified keys
 				if (jsonField == null) {
-					if (removeUnspecifiedKeys) {
-						continue;
-					} else {
-						failMessage = " Null key in struct is not allowed.";
-						return false;
-					}
+					failMessage = " Null key in struct is not allowed.";
+					return false;
 				}
 
 				// Get the field value.
@@ -581,7 +577,7 @@ public class JSONValidator {
 		Object o;
 		if (_prototype.containsKey(KEY_STRING_ERR_ON_EMPTY) && (o = _prototype.get(KEY_STRING_ERR_ON_EMPTY)) instanceof Boolean) {
 			if ((Boolean) o) {
-				if (((String) _json).isEmpty()) {
+				if (((String) _json).trim().isEmpty()) {
 					failMessage = " Empty String was found but not allowed";
 					return false;
 				}
@@ -759,7 +755,7 @@ public class JSONValidator {
 	private boolean isBlockAllowed(Object _testBuild, Object _removeEmpty) {
 		boolean bool = true;
 		if (removeKeysWhenValueEmpty || (_removeEmpty instanceof Boolean && (Boolean) _removeEmpty)) {
-			if (_testBuild instanceof String && ((String) _testBuild).trim().equals("")) {
+			if (_testBuild instanceof String && ((String) _testBuild).trim().isEmpty() ) {
 				bool = false;
 			}
 		}
