@@ -54,6 +54,7 @@ public class JSONValidator {
 	public final static String KEY_STRING_REMOVE_EMPTY = "remove_empty";
 	public final static String KEY_REGEX = "regex";
 	public final static String KEY_FIELDS = "fields";
+	public final static String KEY_FIELD_DEFINITION = "definition";
 	public final static String KEY_FIELDS_MIN = "min";
 	public final static String KEY_FIELDS_MAX = "max";
 	public final static String KEY_DATE_MUST_BE_AFTER = "after";
@@ -227,6 +228,8 @@ public class JSONValidator {
 
 			// Now denormalize and save
 			Object denormalize = _prototype.get(KEY_DENORMALIZE);
+			if( denormalize != null && !(denormalize instanceof Boolean) )
+				throw new PrototypeException("Key " + KEY_DENORMALIZE + " should be a boolean.");
 			if (normalize != null && denormalize instanceof Boolean && (Boolean)denormalize) {
 				try {
 					Method m = c.getDeclaredMethod(KEY_DENORMALIZE, Object.class);
@@ -396,7 +399,7 @@ public class JSONValidator {
 		}
 
 		// None of the attempts worked
-		failMessage = " None of the possible field patterns validated Nexted Failures:";
+		failMessage = " None of the possible field patterns validated Nested Failures:";
 		String tab = "";
 		for (int i = 0; i < _json.getDepth(); i++)
 			tab += "-";
@@ -476,21 +479,23 @@ public class JSONValidator {
 					if (defaultItem == null)
 						throw new PrototypeException(KEY_DEFAULT_ITEM + " cannot be null");
 					if (!defaultItems.containsKey(defaultItem))
-						throw new PrototypeException(KEY_DEFAULT_ITEM + " " + defaultItem.toString() + " was not found. Please add too fieldItems.");
+						throw new PrototypeException(KEY_DEFAULT_ITEM + " " + defaultItem.toString() + " was not found. Please add to fieldItems.");
 					_testBuild.put(field, defaultItems.get(defaultItem));
 				}
 			} else if (containsKey) {
 				// Get actual field
 				Object jsonValue = jsonMap.get(field);
 
-				JSONBlock testBuild = new JSONBlock();
-				if (!validateBlock(new JSONBlock(jsonValue, _json), fieldMap, testBuild)) {
-					failMessage = "." + field + failMessage;
+				// Here we Actually validate the field
+				
+//				if( !fieldMap.containsKey(KEY_FIELD_DEFINITION) ) {
+//					if( !handleField(new JSONBlock(jsonValue, _json), field, fieldMap, _testBuild) )
+//						return false;
+//				} else {
+				Object definitionObject = fieldMap.get(KEY_FIELD_DEFINITION);
+				if( !handleFieldDefinition(_json, field, jsonValue, definitionObject, _testBuild) )
 					return false;
-				} else {
-					if (isBlockAllowed(testBuild.getBlock(), fieldMap.get(KEY_STRING_REMOVE_EMPTY)))
-						_testBuild.put(field, testBuild.getBlock());
-				}
+//				}
 			}
 		}
 
@@ -518,14 +523,15 @@ public class JSONValidator {
 				// Get the field value.
 				Object jsonValue = jsonMap.get(jsonField);
 
-				JSONBlock testBuild = new JSONBlock();
-				if (!validateBlock(new JSONBlock(jsonValue, _json), wildCardMap, testBuild)) {
-					failMessage = "." + jsonField + failMessage;
+				// Here we actually validate the field.
+//				if( !wildCardMap.containsKey(KEY_FIELD_DEFINITION) ) {
+//					if( !handleField(new JSONBlock(jsonValue, _json), jsonField.toString(), wildCardMap, _testBuild) )
+//						return false;
+//				} else {
+				Object definitionObject = wildCardMap.get(KEY_FIELD_DEFINITION);
+				if( !handleFieldDefinition(_json, jsonField.toString(), jsonValue, definitionObject, _testBuild) )
 					return false;
-				} else {
-					if (isBlockAllowed(testBuild.getBlock(), wildCardMap.get(KEY_STRING_REMOVE_EMPTY)))
-						_testBuild.put((String) jsonField, testBuild.getBlock());
-				}
+//				}
 			}
 		} else if (errorOnUnspecifiedKeys) {
 
@@ -552,6 +558,63 @@ public class JSONValidator {
 		}
 
 		return true;
+	}
+
+	private boolean handleFieldDefinition(JSONBlock _json, String _field, Object _jsonValue, Object _definitionObject, Map<String, Object> _testBuild) throws PrototypeException, Exception {
+		if( _definitionObject instanceof List ) {
+			List<?> definitionList = (List<?>) _definitionObject;
+			if( definitionList.isEmpty() )
+				throw new PrototypeException("Key " + KEY_FIELD_DEFINITION + " cannot be an empty list.");
+			
+			testFieldDefinitions : {
+				
+				List<String> subFailures = new ArrayList<String>();
+				for( Object definition : definitionList ) {
+					if( !(definition instanceof Map) )
+						throw new PrototypeException("Key " + KEY_FIELD_DEFINITION + " must be either a Map or List<Map>.");
+					Map<?, ?> definitionMap = (Map<?, ?>) definition;
+					
+					if( handleField(new JSONBlock(_jsonValue, _json), _field, definitionMap, _testBuild) )
+						break testFieldDefinitions; 
+					
+					// Store fail message in the case that we have looped back to here.
+					subFailures.add(failMessage);
+					failMessage = null;
+				}
+				
+				// None of the attempts worked
+				failMessage = " None of the possible field definitions validated Nested Failures:";
+				String tab = "";
+				for (int i = 0; i < _json.getDepth(); i++)
+					tab += "-";
+				for (String subFailure : subFailures)
+					failMessage += "\n" + tab + subFailure;
+				return false;
+
+			}
+			return true;
+				
+		} else if( _definitionObject instanceof Map ) {
+			Map<?, ?> definitionMap = (Map<?, ?>) _definitionObject;
+			
+			return handleField(new JSONBlock(_jsonValue, _json), _field, definitionMap, _testBuild);
+		} else if( _definitionObject == null ) {
+			throw new PrototypeException("Key " + KEY_FIELD_DEFINITION + " is required for fields.");
+		} else {
+			throw new PrototypeException("Key " + KEY_FIELD_DEFINITION + " must be of a List or Map.");
+		}
+	}
+
+	private boolean handleField(JSONBlock _json, String _field, Map<?, ?> _fieldDefinition, Map<String, Object> _testBuild) throws Exception {
+		JSONBlock testBuild = new JSONBlock();
+		if (!validateBlock(_json, _fieldDefinition, testBuild)) {
+			failMessage = "." + _field + failMessage;
+			return false;
+		} else {
+			if (isBlockAllowed(testBuild.getBlock(), _fieldDefinition.get(KEY_STRING_REMOVE_EMPTY)))
+				_testBuild.put(_field, testBuild.getBlock());
+			return true;
+		}
 	}
 
 	@SuppressWarnings("unchecked")

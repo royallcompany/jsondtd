@@ -27,7 +27,6 @@ package com.royall.jsondtd.util;
 import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class DateUtil extends Object {
 	
