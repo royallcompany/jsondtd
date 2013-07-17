@@ -44,12 +44,14 @@ public class JSONValidator {
 
 	public final static String KEY_TYPE = "type";
 	public final static String KEY_CLASS = "class";
+	public final static String KEY_CUSTOM = "custom";
 	public final static String KEY_NORMALIZE = "normalize";
 	public final static String KEY_DENORMALIZE = "denormalize";
 	public final static String KEY_DEFAULT = "def";
 	public final static String KEY_DEFAULT_ITEM = "defitem";
 	public final static String KEY_REQ = "req";
 	public final static String KEY_ENUM = "enum";
+	public final static String KEY_NOT_ENUM = "not";
 	public final static String KEY_STRING_ERR_ON_EMPTY = "err_on_empty";
 	public final static String KEY_STRING_REMOVE_EMPTY = "remove_empty";
 	public final static String KEY_REGEX = "regex";
@@ -176,6 +178,8 @@ public class JSONValidator {
 			return handleClass(_json, _prototype, _testBuild);
 		} else if (_prototype.get(KEY_TYPE) != null) {
 			return handleType(_json, _prototype, _testBuild);
+		} else if (_prototype.get( KEY_CUSTOM ) != null) {
+			return handleCustom(_json, _prototype, _testBuild);
 		} else
 			throw new PrototypeException("'" + KEY_TYPE + "' or '" + KEY_CLASS + "' is required for each level in prototype.");
 	}
@@ -267,12 +271,19 @@ public class JSONValidator {
 			return handleNullType(_json.getBlock(), _prototype, _testBuild);
 		else if (type.equalsIgnoreCase("any"))
 			return handleAnyType(_json.getBlock(), _prototype, _testBuild);
-		else if (customTypes.get(type) instanceof Map)
-			return handleType(_json, (Map<?, ?>) customTypes.get(type), _testBuild);
 		else
 			throw new PrototypeException("Type '" + type + "' was not recognized"); // type not recognized
 	}
 
+	private boolean handleCustom(JSONBlock _json, Map<?, ?> _prototype, JSONBlock _testBuild) throws Exception {
+		String customType = _prototype.get(KEY_CUSTOM).toString();
+		
+		if (customTypes.get(customType) instanceof Map)
+			return handleType(_json, (Map<?, ?>) customTypes.get(customType), _testBuild);
+		else
+			throw new PrototypeException("Custom type '" + customType + "' has not been defined.");
+	}
+	
 	private boolean handleArrayType(JSONBlock _json, Map<?, ?> _prototype, JSONBlock _testBuild) throws Exception {
 		if (!(_json.getBlock() instanceof List)) {
 			failMessage = " Expected " + List.class.getName() + " found " + _json.getBlock().getClass().getName();
@@ -617,15 +628,22 @@ public class JSONValidator {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	private boolean handleStringType(Object _json, Map<?, ?> _prototype, JSONBlock _testBuild) throws Exception {
 
-		List<String> enumValues = null;
+		List<?> enumValues = null;
 		if (_prototype.containsKey(KEY_ENUM)) {
 			Object enumObject = _prototype.get(KEY_ENUM);
 			if (!(enumObject instanceof List))
-				throw new PrototypeException("Enum list must be a list.");
-			enumValues = (List<String>) enumObject;
+				throw new PrototypeException(KEY_ENUM + " list must be a list.");
+			enumValues = (List<?>) enumObject;
+		}
+		
+		List<?> notEnumValues = null;
+		if (_prototype.containsKey( KEY_NOT_ENUM )) {
+			Object enumObject = _prototype.get(KEY_NOT_ENUM);
+			if (!(enumObject instanceof List))
+				throw new PrototypeException(KEY_NOT_ENUM + " list must be a list.");
+			notEnumValues = (List<?>) enumObject;
 		}
 
 		if (!checkNull(_json, false))
@@ -648,7 +666,12 @@ public class JSONValidator {
 		}
 
 		if (enumValues != null && !enumValues.contains(_json)) {
-			failMessage = " Item " + _json + " not found in enum list";
+			failMessage = " Item " + _json + " was not found in " + KEY_ENUM + " list";
+			return false;
+		}
+		
+		if (notEnumValues != null && notEnumValues.contains( _json )) {
+			failMessage = " Item " + _json + " was found in " + KEY_NOT_ENUM + " list";
 			return false;
 		}
 
