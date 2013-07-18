@@ -696,7 +696,7 @@ public class JSONValidator {
 		java.util.Date date = null;
 		if (!(_json instanceof java.util.Date)) {
 			if (_json instanceof String) {
-				if (!(datePattern != null && (date = DateUtil.parseDate(_json.toString(), datePattern)) != null)) {
+				if ( (date = DateUtil.parseDate(_json.toString(), datePattern) ) == null ) {
 					failMessage = " Failed to parse String " + _json.toString() + " as Date of pattern ( " + datePattern + " ) ";
 					return false;
 				}

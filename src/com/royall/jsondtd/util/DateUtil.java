@@ -39,7 +39,7 @@ public class DateUtil extends Object {
 		
 		ParsePosition pp;
 		java.util.Date d = null;
-		DateFormat df = new SimpleDateFormat(_datePattern);
+		DateFormat df = ( _datePattern == null ? new SimpleDateFormat() : new SimpleDateFormat(_datePattern) );
 		df.setLenient(false);
 		
 		try {
