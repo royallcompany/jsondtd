@@ -70,9 +70,9 @@ public class ConditionEvaluator {
 			Object standardObject = _standardMap.get( standardKey );
 
 			if ( standardObject instanceof Map ) {
-				if ( standardField.equalsIgnoreCase( "and" ) ) {
+				if ( standardField.length() >= 3 && standardField.substring(0, 3).equalsIgnoreCase( "and" ) ) {
 					condition = evaluate( (Map<?, ?>) standardObject, _json, ConditionType.AND );
-				} else if ( standardField.equalsIgnoreCase( "or" ) ) {
+				} else if ( standardField.length() >= 2 && standardField.substring(0, 2).equalsIgnoreCase( "or" ) ) {
 					condition = evaluate( (Map<?, ?>) standardObject, _json, ConditionType.OR );
 				} else {
 					throw new PrototypeException( "Conditional type '" + standardField + " contains a struct. Only an 'AND' or an 'OR' can contain a struct of dynamic conditions. Expect String, Number, or boolean." );
@@ -123,30 +123,29 @@ public class ConditionEvaluator {
 
 				Map<?, ?> blockToExamin = (Map<?, ?>) levelToExamin.getBlock();
 
-				if ( standardObject == null ) {
-					// Not expecting Object to be there...
+				Object valueToExamin = blockToExamin.get( standardField );
+				if ( comparisonType.equalsIgnoreCase( "eqi" ) ) {
+					condition = compareEquals( standardField, valueToExamin, standardObject, true );
+				} else if ( comparisonType.equalsIgnoreCase( "neqi" ) ) {
+					condition = !compareEquals( standardField, valueToExamin, standardObject, true );
+				} else if ( comparisonType.equalsIgnoreCase( "eq" ) ) {
+					condition = compareEquals( standardField, valueToExamin, standardObject, false );
+				} else if ( comparisonType.equalsIgnoreCase( "neq" ) ) {
+					condition = !compareEquals( standardField, valueToExamin, standardObject, false );
+				} else if ( comparisonType.equalsIgnoreCase( "gt" ) ) {
+					condition = compare( valueToExamin, standardObject, true, false );
+				} else if ( comparisonType.equalsIgnoreCase( "gte" ) ) {
+					condition = compare( valueToExamin, standardObject, true, true );
+				} else if ( comparisonType.equalsIgnoreCase( "lt" ) ) {
+					condition = compare( valueToExamin, standardObject, false, false );
+				} else if ( comparisonType.equalsIgnoreCase( "lte" ) ) {
+					condition = compare( valueToExamin, standardObject, false, true );
+				} else if ( comparisonType.equalsIgnoreCase( "ex" ) ) {
+					condition = blockToExamin.containsKey( standardField );
+				} else if ( comparisonType.equalsIgnoreCase( "nex" ) ) {
 					condition = !blockToExamin.containsKey( standardField );
 				} else {
-					Object valueToExamin = blockToExamin.get( standardField );
-					if ( comparisonType.equalsIgnoreCase( "eqi" ) ) {
-						condition = compareEquals( standardField, standardObject, valueToExamin, true );
-					} else if ( comparisonType.equalsIgnoreCase( "neqi" ) ) {
-						condition = !compareEquals( standardField, standardObject, valueToExamin, true );
-					} else if ( comparisonType.equalsIgnoreCase( "eq" ) ) {
-						condition = compareEquals( standardField, standardObject, valueToExamin, false );
-					} else if ( comparisonType.equalsIgnoreCase( "neq" ) ) {
-						condition = !compareEquals( standardField, standardObject, valueToExamin, false );
-					} else if ( comparisonType.equalsIgnoreCase( "gt" ) ) {
-						condition = compare( standardObject, valueToExamin, true, false );
-					} else if ( comparisonType.equalsIgnoreCase( "gte" ) ) {
-						condition = compare( standardObject, valueToExamin, true, true );
-					} else if ( comparisonType.equalsIgnoreCase( "lt" ) ) {
-						condition = compare( standardObject, valueToExamin, false, false );
-					} else if ( comparisonType.equalsIgnoreCase( "lte" ) ) {
-						condition = compare( standardObject, valueToExamin, false, true );
-					} else {
-						throw new PrototypeException( "Unrecognized comparison type: " + comparisonType + " from dynamic Condition '" + standardField + "'" );
-					}
+					throw new PrototypeException( "Unrecognized comparison type: " + comparisonType + " from dynamic Condition '" + standardField + "'" );
 				}
 			}
 		} // While loop
@@ -174,7 +173,7 @@ public class ConditionEvaluator {
 	 * @throws PrototypeException The _standardObject was not a Number and needs
 	 *           to be fixed in the prototype.
 	 */
-	private boolean compare( Object _standardObject, Object _valueToExamine, boolean _standardIsMin, boolean _allowEqual ) throws PrototypeException {
+	private boolean compare( Object _valueToExamine, Object _standardObject, boolean _standardIsMin, boolean _allowEqual ) throws PrototypeException {
 
 		//Make sure the prototype is valid
 		if ( !( _standardObject instanceof Number ) )
@@ -215,11 +214,13 @@ public class ConditionEvaluator {
 	 * @throws PrototypeException The value of _standardObject was not a String,
 	 *           Boolean or Number. This needs to be fixed in the prototype.
 	 */
-	private boolean compareEquals( String _standardField, Object _standardObject, Object _valueToExamine, boolean _ignoreCase ) throws PrototypeException {
+	private boolean compareEquals( String _standardField, Object _valueToExamine, Object _standardObject, boolean _ignoreCase ) throws PrototypeException {
 
 		boolean condition = false;
 
-		if ( _standardObject instanceof String && _valueToExamine instanceof String ) {
+		if ( _standardObject == null ) {
+			condition = _valueToExamine == null;
+		} else if ( _standardObject instanceof String && _valueToExamine instanceof String ) {
 			if ( _ignoreCase )
 				condition = ( (String) _standardObject ).equalsIgnoreCase( (String) _valueToExamine );
 			else
