@@ -25,6 +25,7 @@
 package com.royall.jsondtd;
 
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -72,7 +73,7 @@ public class JSONValidator {
 	private final boolean errorOnUnspecifiedKeys;
 	private final boolean removeUnspecifiedKeys;
 	private final boolean removeKeysWhenValueEmpty;
-	private final String datePattern;
+	private final SimpleDateFormat dateFormat;
 
 	private Map<String, Map<String, ?>> customTypes = new HashMap<String, Map<String, ?>>();
 
@@ -113,9 +114,23 @@ public class JSONValidator {
 		this.errorOnUnspecifiedKeys = (errorOnUnspecifiedKeys instanceof Boolean) && ((Boolean) errorOnUnspecifiedKeys);
 		this.removeUnspecifiedKeys = (removeUnspecifiedKeys instanceof Boolean) && ((Boolean) removeUnspecifiedKeys);
 		this.removeKeysWhenValueEmpty = (removeKeysWhenValueEmpty instanceof Boolean) && ((Boolean) removeKeysWhenValueEmpty);
-		this.datePattern = (datePattern != null) ? datePattern.toString() : null;
+		String datePatternString = (datePattern != null) ? datePattern.toString() : null;
+		try {
+			if( datePatternString != null )
+				this.dateFormat = new SimpleDateFormat(datePatternString);
+			else
+				this.dateFormat = new SimpleDateFormat();
+				
+			this.dateFormat.setLenient(false);
+		} catch ( IllegalArgumentException e ) {
+			throw new IllegalArgumentException("Illegal " + ValidationOptions.DatePattern + ": " + e.getMessage());
+		}
 	}
-
+	
+	public static void main(String[] args) {
+		new JSONValidator();
+	}
+	
 	public void addDefaultItem(String _key, Object _item) {
 		defaultItems.put(_key, _item);
 	}
@@ -696,8 +711,8 @@ public class JSONValidator {
 		java.util.Date date = null;
 		if (!(_json instanceof java.util.Date)) {
 			if (_json instanceof String) {
-				if ( (date = DateUtil.parseDate(_json.toString(), datePattern) ) == null ) {
-					failMessage = " Failed to parse String " + _json.toString() + " as Date of pattern ( " + datePattern + " ) ";
+				if ( (date = DateUtil.parseDate(_json.toString(), dateFormat) ) == null ) {
+					failMessage = " Failed to parse String " + _json.toString() + " as Date of pattern ( " + dateFormat.toPattern() + " ) ";
 					return false;
 				}
 			} else {
@@ -714,9 +729,11 @@ public class JSONValidator {
 			if (!(after instanceof java.util.Date) && !(after instanceof String))
 				throw new PrototypeException(KEY_DATE_MUST_BE_AFTER + " must be instance of java.util.Date or String.");
 			if (after instanceof String) {
-				after = DateUtil.parseDate(after.toString(), datePattern);
-				if (after == null)
-					throw new PrototypeException("Failed to parse prototype " + KEY_DATE_MUST_BE_AFTER + " String " + _prototype.get(KEY_DATE_MUST_BE_AFTER).toString() + " as Date of pattern ( " + datePattern + " ) ");
+				after = DateUtil.parseDate(after.toString(), dateFormat);
+				if (after == null) {
+					String msg = "Failed to parse prototype " + KEY_DATE_MUST_BE_AFTER + " String " + _prototype.get(KEY_DATE_MUST_BE_AFTER).toString() + " as Date of pattern ( " + dateFormat.toPattern() + " ) ";
+					throw new PrototypeException( msg );
+				}
 			}
 			if (!((java.util.Date) after).before(date)) {
 				failMessage = " Expected Date to be after " + after.toString() + " but was " + date;
@@ -728,9 +745,11 @@ public class JSONValidator {
 			if (!(before instanceof java.util.Date) && !(before instanceof String))
 				throw new PrototypeException(KEY_DATE_MUST_BE_BEFORE + " must be instance of java.util.Date or String.");
 			if (before instanceof String) {
-				before = DateUtil.parseDate(before.toString(), datePattern);
-				if (before == null)
-					throw new PrototypeException("Failed to parse prototype " + KEY_DATE_MUST_BE_BEFORE + " String " + _prototype.get(KEY_DATE_MUST_BE_BEFORE).toString() + " as Date of pattern ( " + datePattern + " ) ");
+				before = DateUtil.parseDate(before.toString(), dateFormat);
+				if (before == null) {
+					String msg = "Failed to parse prototype " + KEY_DATE_MUST_BE_BEFORE + " String " + _prototype.get(KEY_DATE_MUST_BE_BEFORE).toString() + " as Date of pattern ( " + dateFormat.toPattern() + " ) ";
+					throw new PrototypeException(msg);
+				}
 			}
 			if (!((java.util.Date) before).after(date)) {
 				failMessage = " Expected Date to be before " + before.toString() + " but was " + date;

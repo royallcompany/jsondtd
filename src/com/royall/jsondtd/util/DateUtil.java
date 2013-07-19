@@ -24,13 +24,12 @@
 */
 package com.royall.jsondtd.util;
 
-import java.text.DateFormat;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 
 public class DateUtil extends Object {
 	
-	public static java.util.Date parseDate( String sDate, String _datePattern ){
+	public static java.util.Date parseDate( String sDate, SimpleDateFormat _dateFormat ){
 		sDate = (sDate != null) ? sDate.trim() : null;
 		
 		/* if the date is null or empty, no point in going forward */
@@ -39,12 +38,10 @@ public class DateUtil extends Object {
 		
 		ParsePosition pp;
 		java.util.Date d = null;
-		DateFormat df = ( _datePattern == null ? new SimpleDateFormat() : new SimpleDateFormat(_datePattern) );
-		df.setLenient(false);
 		
 		try {
 			pp = new ParsePosition(0);
-			d = df.parse(sDate,pp);
+			d = _dateFormat.parse(sDate,pp);
 			if ( pp.getIndex()!=sDate.length() ) {
 				d = null;
 			}
