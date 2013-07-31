@@ -36,18 +36,30 @@ public class JSONFormatter extends Object {
 
 	private String tab;
 	private String nl = System.getProperty("line.separator");
+	private boolean keyQuotes;
 	private DateFormat df = new SimpleDateFormat();
+	
+	public static String DEFAULTTAB = "\t";
 
 	public static String format( Object object ){
 		return new JSONFormatter().parseObject(object);
 	}
 	
 	public JSONFormatter() {
-		this("\t");
+		this(DEFAULTTAB);
 	}
 	
 	public JSONFormatter(String _tab) {
+		this(false, _tab);
+	}
+	
+	public JSONFormatter(boolean _useQuoteOnKeys) {
+		this(_useQuoteOnKeys, DEFAULTTAB);
+	}
+	
+	public JSONFormatter(boolean _useQuoteOnKeys, String _tab) {
 		this.tab = _tab;
+		keyQuotes = _useQuoteOnKeys;
 	}
 	
 	/**
@@ -124,7 +136,13 @@ public class JSONFormatter extends Object {
 			// Write out this key/value pair
 			sb.append(nl);
 			empty = false;
-			sb.append(margin + key + " : ");
+			sb.append(margin);
+			if( this.keyQuotes )
+				sb.append( "\"" );
+			sb.append( key );
+			if( this.keyQuotes )
+				sb.append( "\"" );
+			sb.append(" : ");
 			parseValue(sb, value, _depth);
 			sb.append(",");
 		}

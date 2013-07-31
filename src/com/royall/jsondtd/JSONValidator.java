@@ -127,10 +127,6 @@ public class JSONValidator {
 		}
 	}
 	
-	public static void main(String[] args) {
-		new JSONValidator();
-	}
-	
 	public void addDefaultItem(String _key, Object _item) {
 		defaultItems.put(_key, _item);
 	}
@@ -300,6 +296,9 @@ public class JSONValidator {
 	}
 	
 	private boolean handleArrayType(JSONBlock _json, Map<?, ?> _prototype, JSONBlock _testBuild) throws Exception {
+		if (!checkNull(_json.getBlock(), false))
+			return false;
+		
 		if (!(_json.getBlock() instanceof List)) {
 			failMessage = " Expected " + List.class.getName() + " found " + _json.getBlock().getClass().getName();
 			return false;
@@ -364,7 +363,9 @@ public class JSONValidator {
 	}
 
 	private boolean handleStructType(JSONBlock _json, Map<?, ?> _prototype, JSONBlock _testBuild) throws Exception {
-
+		if (!checkNull(_json.getBlock(), false))
+			return false;
+		
 		if (!(_json.getBlock() instanceof Map)) {
 			failMessage = " Expected Type " + Map.class.getName() + " Found Type " + _json.getBlock().getClass().getName();
 			return false;
