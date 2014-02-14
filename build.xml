@@ -1,0 +1,148 @@
+<project name="jsonDTD" default="compile" basedir=".">
+
+	<property name="build" value="./build/classes/" />
+	<property name="src" value="./src/" />
+	<property name="docs" value="./docs/javadoc" />
+	<property name="dist" value="./dist/" />
+	<property name="lib" value="./lib/" />
+	<property name="antlib" location="./antlib" />
+
+	<property name="jar" value="jsonDTD.jar" />
+	<property name="docs-jar" value="jsonDTD-javadocs.jar" />
+	
+	<property name="test.src" location="test" />
+	<property name="junit.output" location="./junit" />
+
+	<property name="test.build" location="./testclasses/testclasses" />
+	<property name="debug.build" location="./testclasses/debugclasses" />
+	<property name="instr.build" value="./testclasses/instrclasses" />
+
+	<path id="project.jars">
+		<fileset dir="${lib}">
+			<include name="*.jar" />
+			<exclude name="${jar-jar}" />
+			<exclude name="${docs-jar}"/>
+			<exclude name="${jar}"/>
+		</fileset>
+	</path>
+
+	<path id="project.class.path">
+		<pathelement location="${build}" />
+	</path>
+	
+	<path id="debug.class.path">
+		<pathelement location="${debug.build}" />
+	</path>
+
+	<path id="test.class.path">
+		<pathelement location="${test.build}" />
+		<pathelement location="${instr.build}" />
+	</path>
+
+	<!-- - - - - - - - - - - - - - - - - - - 
+	 Targets
+	- - - - - - - - - - - - - - - - - -  -->
+
+	<target name="clean" description="Clean build folders">
+		<delete dir="${build}" />
+		<delete dir="${docs}" />
+		<delete dir="${test.build}" />
+		<delete dir="${debug.build}" />
+		<delete dir="${instr.build}" />
+		<delete dir="${junit.output}" />
+	</target>
+
+
+	<target name="init" description="Initialisation">
+		<tstamp />
+		<mkdir dir="${build}" />
+		<mkdir dir="${docs}" />
+		<mkdir dir="${test.build}" />
+		<mkdir dir="${debug.build}" />
+		<mkdir dir="${instr.build}" />
+		<mkdir dir="${junit.output}" />
+
+	</target>
+
+
+	<target name="compile" depends="init">
+		<javac srcdir="${src}" destdir="${build}" debug="on" nowarn="on">
+			<classpath>
+				<pathelement path="${build}"/>
+			</classpath>
+		</javac>
+	</target>
+
+	<!--JAR-->
+	<target name="jar" depends="compile" description="Builds the jar">
+		<delete file="${dist}${jar}" />
+		<jar jarfile="${dist}${jar}" 
+					includes="com/royall/**"
+					basedir="${build}" 
+					filesonly="true" 
+					compress="true" />
+		
+	</target>
+	
+	<target name="package-docs" depends="docs" description="build javadoc jar" >
+	    <jar compress="true" destfile="${dist}/${docs-jar}" basedir="${docs}"  />
+	</target>
+	
+	<target name="docs" depends="init">
+		<javadoc sourcepath="${src}" 
+						packagenames="*" 
+						destdir="${docs}" 
+						author="true" 
+						version="true" 
+						use="true" 
+						classpathref="project.class.path" 
+						windowtitle="JsonDTD JavaDoc">
+			<link href="http://download.oracle.com/javase/6/docs/api/"/>
+		</javadoc>
+	</target>
+
+	<!-- Testing section -->
+
+	<target name="test.compile" depends="init">
+
+		<!-- compile classes with debug on -->
+		<javac srcdir="${src}" destdir="${debug.build}" optimize="off" debug="on">
+			<classpath>
+				<path refid="debug.class.path" />
+				<path refid="project.jars" />
+			</classpath>
+		</javac>
+
+		<!-- compile test classes -->
+		<javac srcdir="${test.src}" destdir="${test.build}" optimize="off" debug="on">
+			<classpath>
+				<path refid="debug.class.path" />
+				<path refid="project.jars" />
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="test" depends="test.compile">
+
+		<junit printsummary="yes" haltonfailure="no" fork="yes" failureproperty="junit-failure" errorproperty="junit-failure">
+			<formatter type="xml" />
+			<batchtest fork="yes" todir="${junit.output}">
+				<fileset dir="${test.build}" includes="**/*Test.class" />
+			</batchtest>
+			<classpath>
+				<path refid="test.class.path" />
+				<path refid="debug.class.path" />
+				<path refid="project.jars" />
+			</classpath>
+		</junit>
+
+		<junitreport todir="${junit.output}">
+			<fileset dir="${junit.output}">
+				<include name="TEST-*.xml" />
+			</fileset>
+			<report format="frames" todir="${junit.output}/html" />
+		</junitreport>
+
+	</target>
+
+</project>

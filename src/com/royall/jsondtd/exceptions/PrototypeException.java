@@ -47,6 +47,7 @@ public class PrototypeException extends JSONValidatorException {
 		e = _e;
 	}
 
+	@Override
 	public String getMessage() {
 		return message;
 	}

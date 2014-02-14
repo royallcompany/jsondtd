@@ -24,6 +24,8 @@
 */
 package com.royall.jsondtd;
 
+import com.royall.jsondtd.exceptions.JSONValidatorException;
+
 public interface Normalizer {
 
 	/**
@@ -32,7 +34,7 @@ public interface Normalizer {
 	 * @param _objectToNormalize
 	 * @return
 	 */
-	public Object normalize(Object _objectToNormalize);
+	public Object normalize(Object _objectToNormalize) throws JSONValidatorException;
 	
 	/** 
 	 * Used to return a normalized Object to it's original form. 
@@ -42,5 +44,5 @@ public interface Normalizer {
 	 * @param _objectToDenormalize
 	 * @return
 	 */
-	public Object denormalize(Object _objectToDenormalize);
+	public Object denormalize(Object _objectToDenormalize) throws JSONValidatorException;
 }

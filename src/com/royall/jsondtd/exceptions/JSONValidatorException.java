@@ -49,6 +49,7 @@ public class JSONValidatorException extends Exception {
 		message = _message;
 	}
 
+	@Override
 	public String getMessage() {
 		return message;
 	}
